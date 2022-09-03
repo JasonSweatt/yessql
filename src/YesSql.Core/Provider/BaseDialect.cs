@@ -106,7 +106,7 @@ namespace YesSql.Provider
 
         public abstract string IdentitySelectString { get; }
         public abstract string IdentityLastId { get; }
-        
+
         public virtual string IdentityColumnString => "[bigint] IDENTITY(1,1) primary key";
 
         public virtual string NullColumnString => String.Empty;
@@ -143,6 +143,7 @@ namespace YesSql.Provider
                 .Append(String.Join(", ", srcColumns))
 #endif
                 .Append(") references ")
+                .Append(SchemaNameQuotedPrefix())
                 .Append(destTable);
 
             if (!primaryKey)
@@ -171,6 +172,7 @@ namespace YesSql.Provider
                 sb.Append("if exists ");
             }
 
+            sb.Append(SchemaNameQuotedPrefix());
             sb.Append(QuoteForTableName(name)).Append(CascadeConstraintsString);
 
             if (SupportsIfExistsAfterTableName)
@@ -183,6 +185,8 @@ namespace YesSql.Provider
         public abstract string GetDropIndexString(string indexName, string tableName);
         public abstract string QuoteForColumnName(string columnName);
         public abstract string QuoteForTableName(string tableName);
+        public abstract string QuoteForAliasName(string aliasName);
+        public virtual string SchemaNameQuotedPrefix() => null;
 
         public virtual string QuoteString => "\"";
         public virtual string DoubleQuoteString => "\"\"";
@@ -192,6 +196,10 @@ namespace YesSql.Provider
         public virtual string DefaultValuesInsert => "DEFAULT VALUES";
 
         public virtual bool PrefixIndex => false;
+
+        public virtual string Schema => null;
+
+        public virtual string DefaultSchema => null;
 
         public abstract byte DefaultDecimalPrecision { get; }
 
@@ -282,7 +290,7 @@ namespace YesSql.Provider
             {
                 var trimmed = o.Trim();
 
-                // Each order segment can be a field name, or a punctuation, so we filter out the punctuations 
+                // Each order segment can be a field name, or a punctuation, so we filter out the punctuations
                 if (trimmed != "," && trimmed != "DESC" && trimmed != "ASC" && !select.Contains(o))
                 {
                     select.Add(",");

@@ -114,7 +114,7 @@ namespace YesSql.Commands
 
                     if (typeof(MapIndex).IsAssignableFrom(type))
                     {
-                        // We can set the document id 
+                        // We can set the document id
                         sbColumnList.Append(", ").Append(dialect.QuoteForColumnName("DocumentId"));
                         sbParameterList.Append(", @DocumentId").Append(ParameterSuffix);
                     }
@@ -133,10 +133,10 @@ namespace YesSql.Commands
                     }
                 }
 
-                InsertsList[key] = result = $"insert into {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} {values} {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")};";
+                InsertsList[key] = result = $"insert into {dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} {values} {dialect.IdentitySelectString} {dialect.QuoteForColumnName("Id")};";
             }
 
-            return result;            
+            return result;
         }
 
         protected string Updates(Type type, ISqlDialect dialect)
@@ -158,7 +158,7 @@ namespace YesSql.Commands
                     }
                 }
 
-                UpdatesList[key] = result = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} set {values} where {dialect.QuoteForColumnName("Id")} = @Id{ParameterSuffix};";
+                UpdatesList[key] = result = $"update {dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(_store.Configuration.TablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(type, Collection))} set {values} where {dialect.QuoteForColumnName("Id")} = @Id{ParameterSuffix};";
             }
 
             return result;
@@ -168,7 +168,7 @@ namespace YesSql.Commands
         {
             return
                 pi.Name != nameof(IIndex.Id) &&
-                // don't read DocumentId when on a MapIndex as it might be used to 
+                // don't read DocumentId when on a MapIndex as it might be used to
                 // read the DocumentId directly from an Index query
                 pi.Name != "DocumentId"
                 ;

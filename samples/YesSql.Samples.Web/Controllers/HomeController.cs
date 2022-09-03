@@ -61,7 +61,19 @@ namespace YesSql.Samples.Web.Controllers
                 {
                     new SelectListItem("Newest", BlogPostSort.Newest.ToString(), search.SelectedSort == BlogPostSort.Newest),
                     new SelectListItem("Oldest", BlogPostSort.Oldest.ToString(), search.SelectedSort == BlogPostSort.Oldest)
-                };                
+                };
+
+                var tags = (BlogPostTags[])Enum.GetValues(typeof(BlogPostTags));
+                search.Tags = new List<SelectListItem>();
+                foreach(var value in tags)
+                {
+                    var name = value.ToString();
+                    search.Tags.Add(new SelectListItem(
+                        value == BlogPostTags.Default ? "Select..." : name,
+                        value == BlogPostTags.Default ? "" : name,
+                        search.SelectedTag == value)
+                    );
+                }
 
                 var vm = new BlogPostViewModel
                 {
@@ -85,7 +97,7 @@ namespace YesSql.Samples.Web.Controllers
 
             search.FilterResult.MapFrom(search);
 
-            return RedirectToAction("Index", new RouteValueDictionary { { "q", search.FilterResult.ToString() } });  
+            return RedirectToAction("Index", new RouteValueDictionary { { "q", search.FilterResult.ToString() } });
         }
     }
 }

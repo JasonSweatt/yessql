@@ -25,7 +25,7 @@ namespace YesSql.Commands
         {
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
-            var updateCmd = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} "
+            var updateCmd = $"update {dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} "
                 + $"set {dialect.QuoteForColumnName("Content")} = @Content, {dialect.QuoteForColumnName("Version")} = @Version, {dialect.QuoteForColumnName("LastUpdatedOn")} = @LastUpdatedOn where "
                 + $"{dialect.QuoteForColumnName("Id")} = @Id "
                 + (_checkVersion > -1
@@ -47,8 +47,6 @@ namespace YesSql.Commands
             {
                 throw new ConcurrencyException();
             }
-
-            return;
         }
 
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
@@ -65,14 +63,14 @@ namespace YesSql.Commands
 
             var documentTable = _store.Configuration.TableNameConvention.GetDocumentTable(Collection);
 
-            var updateCmd = $"update {dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} "
+            var updateCmd = $"update {dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(_store.Configuration.TablePrefix + documentTable)} "
                 + $"set {dialect.QuoteForColumnName("Content")} = @Content_{index}, {dialect.QuoteForColumnName("Version")} = @Version_{index}, {dialect.QuoteForColumnName("LastUpdatedOn")} = @LastUpdatedOn_{index} where "
                 + $"{dialect.QuoteForColumnName("Id")} = @Id_{index};"
                 ;
 
             queries.Add(updateCmd);
 
-            Document.UpdatedTime = DateTime.UtcNow;
+            Document.LastUpdatedOn = DateTime.UtcNow;
             batchCommand
                 .AddParameter("Id_" + index, Document.Id, DbType.Int64)
                 .AddParameter("Content_" + index, Document.Content, DbType.String)

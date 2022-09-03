@@ -123,7 +123,7 @@ namespace YesSql
                 {
                     state.IdentityMap.AddEntity(id, entity);
                     state.Updated.Add(entity);
-                    
+
                     // If this entity needs to be checked for concurrency, track its version
                     if (checkConcurrency || _store.Configuration.ConcurrentTypes.Contains(entity.GetType()))
                     {
@@ -222,7 +222,7 @@ namespace YesSql
         public void Detach(object entity, string collection)
         {
             CheckDisposed();
-            
+
             var state = GetState(collection);
 
             state.Saved.Remove(entity);
@@ -335,7 +335,7 @@ namespace YesSql
 
             var newContent = Store.Configuration.ContentSerializer.Serialize(entity);
 
-            // if the document has already been updated or saved with this session (auto or intentional flush), ensure it has 
+            // if the document has already been updated or saved with this session (auto or intentional flush), ensure it has
             // been changed before doing another query
             if (tracked && String.Equals(newContent, oldDoc.Content))
             {
@@ -393,7 +393,7 @@ namespace YesSql
 
             var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
 
-            var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
+            var command = "select * from " + _dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " = @Id";
             var key = new WorkerQueryKey(nameof(GetDocumentByIdAsync), new[] { id });
 
             try
@@ -403,7 +403,7 @@ namespace YesSql
                     var logger = state.Store.Configuration.Logger;
 
                     if (logger.IsEnabled(LogLevel.Trace))
-                    { 
+                    {
                         logger.LogTrace(state.Command);
                     }
 
@@ -418,13 +418,13 @@ namespace YesSql
                 await CancelAsync();
 
                 throw;
-            }            
+            }
         }
 
         public void Delete(object obj, string collection = null)
         {
             CheckDisposed();
-            
+
             var state = GetState(collection);
 
             state.Deleted.Add(obj);
@@ -489,7 +489,7 @@ namespace YesSql
 
             var documentTable = Store.Configuration.TableNameConvention.GetDocumentTable(collection);
 
-            var command = "select * from " + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
+            var command = "select * from " + _dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(_tablePrefix + documentTable) + " where " + _dialect.QuoteForColumnName("Id") + " " + _dialect.InOperator("@Ids");
 
             var key = new WorkerQueryKey(nameof(GetAsync), ids);
             try
@@ -609,7 +609,7 @@ namespace YesSql
 
                         _store.CompiledQueries[discriminator] = queryState;
                     }
-                } 
+                }
             }
 
             queryState = queryState.Clone();
@@ -678,7 +678,7 @@ namespace YesSql
 
             _flushing = true;
 
-            // we only check if the session is disposed if 
+            // we only check if the session is disposed if
             // there are no commands to commit.
 
             CheckDisposed();
@@ -894,7 +894,7 @@ namespace YesSql
                     {
                         _transaction.Commit();
                     }
-                }                
+                }
             }
             finally
             {
@@ -1204,8 +1204,7 @@ namespace YesSql
             await CreateConnectionAsync();
 
             var name = _tablePrefix + _store.Configuration.TableNameConvention.GetIndexTable(descriptor.IndexType, collection);
-            var sql = "select * from " + _dialect.QuoteForTableName(name) + " where " + _dialect.QuoteForColumnName(descriptor.GroupKey.Name) + " = @currentKey";
-
+            var sql = "select * from " + _dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(name) + " where " + _dialect.QuoteForColumnName(descriptor.GroupKey.Name) + " = @currentKey";
             var index = await _connection.QueryAsync(descriptor.IndexType, sql, new { currentKey }, _transaction);
             return index.FirstOrDefault() as ReduceIndex;
         }
@@ -1248,7 +1247,7 @@ namespace YesSql
         {
             _descriptors ??= new Dictionary<string, IEnumerable<IndexDescriptor>>();
 
-            var cacheKey = String.IsNullOrEmpty(collection) 
+            var cacheKey = String.IsNullOrEmpty(collection)
                 ? t.FullName
                 : String.Concat(t.FullName + ":" + collection)
                 ;

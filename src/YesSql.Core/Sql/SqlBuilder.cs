@@ -48,7 +48,7 @@ namespace YesSql.Sql
         public void Table(string table, string alias = null)
         {
             FromSegments.Clear();
-            FromSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table));
+            FromSegments.Add(_dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(_tablePrefix + table));
 
             if (!String.IsNullOrEmpty(alias))
             {
@@ -79,30 +79,40 @@ namespace YesSql.Sql
             // Don't prefix if alias is used
             if (alias != onTable)
             {
-                onTable = _tablePrefix + onTable;
+                onTable = _dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(onTable);
+            }
+            else
+            {
+                onTable = _dialect.QuoteForAliasName(onTable);
             }
 
             if (toTable != toAlias)
+            {
+                toTable = _dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(_tablePrefix + toTable);
+            }
+            else
             {
                 toTable = _tablePrefix + toTable;
             }
 
             if (!String.IsNullOrEmpty(toAlias))
             {
-                toTable = toAlias;
+                toTable = _dialect.QuoteForAliasName(toAlias);
             }
-            
+
             JoinSegments.Add(" INNER JOIN ");
-            JoinSegments.Add(_dialect.QuoteForTableName(_tablePrefix + table));
+            JoinSegments.Add(_dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(_tablePrefix + table));
+
             if (!String.IsNullOrEmpty(alias))
             {
-                JoinSegments.AddRange(new[] { " AS ", _dialect.QuoteForTableName(alias) });
+                JoinSegments.AddRange(new[] { " AS ", _dialect.QuoteForAliasName(alias) });
             }
+
             JoinSegments.AddRange(new[] {
-                " ON ", _dialect.QuoteForTableName(onTable), ".", _dialect.QuoteForColumnName(onColumn),
-                " = ", _dialect.QuoteForTableName(toTable), ".", _dialect.QuoteForColumnName(toColumn)
+                " ON ", onTable, ".", _dialect.QuoteForColumnName(onColumn),
+                " = ", toTable, ".", _dialect.QuoteForColumnName(toColumn)
                 }
-            );            
+            );
         }
 
         public void Select()
@@ -158,9 +168,12 @@ namespace YesSql.Sql
             if (!isAlias)
             {
                 table = _tablePrefix + table;
+                return _dialect.SchemaNameQuotedPrefix() + _dialect.QuoteForTableName(table) + "." + column;
             }
-
-            return _dialect.QuoteForTableName(table) + "." + column;
+            else
+            {
+                return _dialect.QuoteForTableName(table) + "." + column;
+            }
         }
 
         public virtual void AndAlso(string where)

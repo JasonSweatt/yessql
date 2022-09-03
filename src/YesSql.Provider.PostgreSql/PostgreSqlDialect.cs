@@ -83,8 +83,13 @@ namespace YesSql.Provider.PostgreSql
             };
         }
 
-        public PostgreSqlDialect()
+        public PostgreSqlDialect(string schema = null)
         {
+            if (!String.IsNullOrWhiteSpace(schema))
+            {
+                Schema = schema;
+            }
+
             AddTypeHandler<TimeSpan, long>(x => x.Ticks);
 
             // DateTimes needs to be stored as Utc in timesstamp fields since npgsql 6.0.
@@ -102,6 +107,8 @@ namespace YesSql.Provider.PostgreSql
             Methods.Add("month", new TemplateFunction("extract(month from {0})"));
             Methods.Add("year", new TemplateFunction("extract(year from {0})"));
             Methods.Add("now", new TemplateFunction("now() at time zone 'utc'"));
+            Methods.Add("JSON_VALUE", new JsonPathExpressionFunction("{0}::json#>>string_to_array({1}, ',')", 1));
+            Methods.Add("JSON_MODIFY", new JsonPathExpressionFunction("jsonb_set({0}, string_to_array({1}, ','), to_jsonb({2}), false)", 1));
         }
 
         public override string Name => "PostgreSql";
@@ -113,7 +120,8 @@ namespace YesSql.Provider.PostgreSql
         public override string RandomOrderByClause => "random()";
         public override bool SupportsIfExistsBeforeTableName => true;
         public override bool PrefixIndex => true;
-
+        public override string Schema { get; }
+        public override string DefaultSchema => "public";
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
             if (length.HasValue)
@@ -168,7 +176,7 @@ namespace YesSql.Provider.PostgreSql
 
             return name;
         }
-        
+
         public override string FormatIndexName(string name)
         {
             // https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
@@ -179,7 +187,7 @@ namespace YesSql.Provider.PostgreSql
             }
 
             return name;
-        }  
+        }
         public override string GetDropForeignKeyConstraintString(string name)
         {
             return " drop foreign key " + name;
@@ -221,6 +229,18 @@ namespace YesSql.Provider.PostgreSql
         public override string QuoteForTableName(string tableName)
         {
             return QuoteString + tableName + QuoteString;
+        }
+
+        public override string QuoteForAliasName(string aliasName)
+        {
+            return QuoteString + aliasName + QuoteString;
+        }
+
+        // PostgreSQL schema is generally not quoted but it works too if quoted.
+        public override string SchemaNameQuotedPrefix()
+        {
+            var schema = Schema ?? DefaultSchema;
+            return schema + ".";
         }
 
         public override string CascadeConstraintsString => " cascade ";

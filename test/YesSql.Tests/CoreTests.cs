@@ -46,6 +46,8 @@ namespace YesSql.Tests
             {
                 _configuration = CreateConfiguration();
 
+                CreateDatabaseSchema(_configuration);
+
                 CleanDatabase(_configuration, false);
 
                 _store = await StoreFactory.CreateAndInitializeAsync(_configuration);
@@ -124,8 +126,8 @@ namespace YesSql.Tests
 
                 try
                 {
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + bridgeTableName)}");
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable)}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.SchemaNameQuotedPrefix() + configuration.SqlDialect.QuoteForTableName(TablePrefix + bridgeTableName)}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.SchemaNameQuotedPrefix() + configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable)}");
                 }
                 catch
                 {
@@ -139,7 +141,7 @@ namespace YesSql.Tests
 
                 try
                 {
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable)}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.SchemaNameQuotedPrefix() + configuration.SqlDialect.QuoteForTableName(TablePrefix + indexTable)}");
                 }
                 catch { }
             }
@@ -150,7 +152,7 @@ namespace YesSql.Tests
 
                 try
                 {
-                    connection.Execute($"DELETE FROM {configuration.SqlDialect.QuoteForTableName(TablePrefix + tableName)}");
+                    connection.Execute($"DELETE FROM {configuration.SqlDialect.SchemaNameQuotedPrefix() + configuration.SqlDialect.QuoteForTableName(TablePrefix + tableName)}");
                 }
                 catch { }
             }
@@ -199,6 +201,11 @@ namespace YesSql.Tests
         }
 
         protected virtual void OnClearTables(DbConnection connection)
+        {
+
+        }
+
+        protected virtual void CreateDatabaseSchema(IConfiguration configuration)
         {
 
         }
@@ -1978,7 +1985,7 @@ namespace YesSql.Tests
                 Assert.Equal("Steve", (await query.FirstOrDefaultAsync()).Firstname);
             }
         }
-        
+
         [Fact]
         public async Task ShouldJoinReduceIndex()
         {
@@ -3181,7 +3188,7 @@ namespace YesSql.Tests
         [Fact]
         public async Task ShouldQuerySubClasses()
         {
-            // When a base type is queried, we need to ensure the 
+            // When a base type is queried, we need to ensure the
             // results from the query keep their original type
 
             _store.RegisterIndexes<ShapeIndexProvider<Circle>>();
@@ -4314,7 +4321,7 @@ namespace YesSql.Tests
                 await connection.OpenAsync();
 
                 var dialect = _store.Configuration.SqlDialect;
-                var sql = "SELECT " + dialect.RenderMethod(method, dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime))) + " FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate));
+                var sql = "SELECT " + dialect.RenderMethod(method, dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime))) + " FROM " + dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate));
                 result = await connection.QueryFirstOrDefaultAsync<int>(sql);
             }
 
@@ -4353,15 +4360,54 @@ namespace YesSql.Tests
 
                 var dialect = _store.Configuration.SqlDialect;
 
-                var publishedInTheFutureSql = "SELECT count(1) FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " > " + dialect.RenderMethod("now");
+                var publishedInTheFutureSql = "SELECT count(1) FROM " + dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " > " + dialect.RenderMethod("now");
                 publishedInTheFutureResult = await connection.QueryFirstOrDefaultAsync<int>(publishedInTheFutureSql);
 
-                var publishedInThePastSql = "SELECT count(1) FROM " + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " < " + dialect.RenderMethod("now");
+                var publishedInThePastSql = "SELECT count(1) FROM " + dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(TablePrefix + nameof(ArticleByPublishedDate)) + " WHERE " + dialect.QuoteForColumnName(nameof(ArticleByPublishedDate.PublishedDateTime)) + " < " + dialect.RenderMethod("now");
                 publishedInThePastResult = await connection.QueryFirstOrDefaultAsync<int>(publishedInThePastSql);
             }
 
             Assert.Equal(10, publishedInTheFutureResult);
             Assert.Equal(10, publishedInThePastResult);
+        }
+
+        [Theory]
+        [InlineData("JSON_VALUE", "'{ \"a\" : 1, \"b\" : 2 }'", "'$.b'", "2")]
+        [InlineData("JSON_VALUE", "'{ \"a\" : { \"b\" : { \"c\" : 3 } } }'", "'$.a.b.c'", "3")]
+        [InlineData("JSON_VALUE", "'{ \"a\" : { \"b\" : [{ \"c\" : 1 }, { \"c\" : 2 }, { \"c\" : 3 }] } }'", "'$.a.b[2].c'", "3")]
+        public async Task SqlJsonValueFunction(string method, string json, string jsonPathExpression, string expected)
+        {
+            string result;
+
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+                var dialect = _store.Configuration.SqlDialect;
+                var sql = "SELECT " + dialect.RenderMethod(method, json, jsonPathExpression);
+                result = await connection.QueryFirstOrDefaultAsync<string>(sql);
+            }
+
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData("JSON_MODIFY", "'{\"a\":1,\"b\":2}'", "'$.b'", "3", "{\"a\":1,\"b\":3}")]
+        [InlineData("JSON_MODIFY", "'{ \"a\" : { \"b\" : { \"c\" : 3 } } }'", "'$.a.b.c'", "4", "{\"a\":{\"b\":{\"c\":4}}}")]
+        [InlineData("JSON_MODIFY", "'{ \"a\" : { \"b\" : [{ \"c\" : 1 }, { \"c\" : 2 }, { \"c\" : 3 }] } }'", "'$.a.b[2].c'", "5", "{\"a\":{\"b\":[{\"c\":1},{\"c\":2},{\"c\":5}]}}")]
+        public async Task SqlJsonModifyFunction(string method, string json, string jsonPathExpression, string newValue, string expected)
+        {
+            string result;
+
+            using (var connection = _store.Configuration.ConnectionFactory.CreateConnection())
+            {
+                await connection.OpenAsync();
+
+                var dialect = _store.Configuration.SqlDialect;
+                var sql = "SELECT " + dialect.RenderMethod(method, json, jsonPathExpression, newValue);
+                result = await connection.QueryFirstOrDefaultAsync<string>(sql);
+            }
+            //we are getting rid of unnecessary JSON formatting
+            Assert.Equal(expected, result.Replace(": ", ":").Replace(" :", ":").Replace(", ", ",").Replace("{ ", "{").Replace(" }", "}"));
         }
 
         [Fact]
@@ -5112,10 +5158,11 @@ namespace YesSql.Tests
                             .Column<string>(column1)
                         );
 
-                    var sqlInsert = String.Format("INSERT INTO {0} ({1}) VALUES({2})",
+                    var sqlInsert = String.Format("INSERT INTO {3}{0} ({1}) VALUES({2})",
                         _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable),
                         _store.Configuration.SqlDialect.QuoteForColumnName(column1),
-                        _store.Configuration.SqlDialect.GetSqlValue(value)
+                        _store.Configuration.SqlDialect.GetSqlValue(value),
+                        _store.Configuration.SqlDialect.SchemaNameQuotedPrefix()
                         );
 
                     connection.Execute(sqlInsert, transaction: transaction);
@@ -5125,9 +5172,10 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
-                    var sqlSelect = String.Format("SELECT {0} FROM {1}",
+                    var sqlSelect = String.Format("SELECT {0} FROM {2}{1}",
                         _store.Configuration.SqlDialect.QuoteForColumnName(column1),
-                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable)
+                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable),
+                        _store.Configuration.SqlDialect.SchemaNameQuotedPrefix()
                         );
 
                     var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
@@ -5150,9 +5198,10 @@ namespace YesSql.Tests
 
                 using (var transaction = connection.BeginTransaction(_store.Configuration.IsolationLevel))
                 {
-                    var sqlSelect = String.Format("SELECT {0} FROM {1}",
+                     var sqlSelect = String.Format("SELECT {0} FROM {2}{1}",
                         _store.Configuration.SqlDialect.QuoteForColumnName(column2),
-                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable)
+                        _store.Configuration.SqlDialect.QuoteForTableName(prefixedTable),
+                        _store.Configuration.SqlDialect.SchemaNameQuotedPrefix()
                         );
 
                     var result = connection.Query(sqlSelect, transaction: transaction).FirstOrDefault();
@@ -5553,12 +5602,12 @@ namespace YesSql.Tests
             // Simulates a long running workflow where a web page
             // wants to update a document, and check that the state it
             // stored was not updated in the meantime.
-            // The difference with other concurrency checks is that 
+            // The difference with other concurrency checks is that
             // the Controller would reload a Document and apply changes,
             // but the Version would not detect the concurrent conflict
             // as the controller has reloaded the document with the new version.
 
-            // In this test the version is checked against the view model 
+            // In this test the version is checked against the view model
             // to ensure we are modifying the correct version
 
             _store.Configuration.CheckConcurrentUpdates<Person>();
@@ -5626,7 +5675,7 @@ namespace YesSql.Tests
             // Simulates a long running workflow where a web page
             // wants to update a document, and check that the state it
             // stored was not updated in the meantime.
-            // The difference with other concurrency checks is that 
+            // The difference with other concurrency checks is that
             // the Controller would reload a Document and apply changes,
             // but the Version would not detect the concurrent conflict
             // as the controller has reloaded the document with the new version.
@@ -6154,13 +6203,19 @@ namespace YesSql.Tests
 
                 await parsed.ExecuteAsync(filterQuery);
 
+                var assert1 = (await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("steve")).FirstOrDefaultAsync()).Title;
+                var assert2 = await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("steve")).CountAsync();
+
                 // Normal YesSql query
-                Assert.Equal("post by steve about cats", (await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("steve")).FirstOrDefaultAsync()).Title);
-                Assert.Equal(1, await session.Query().For<Article>().With<ArticleByPublishedDate>(x => x.Title.Contains("steve")).CountAsync());
+                Assert.Equal("post by steve about cats", assert1);
+                Assert.Equal(1, assert2);
+
+                var assert3 = (await filterQuery.FirstOrDefaultAsync()).Title;
+                var assert4 = await filterQuery.CountAsync();
 
                 // Parsed query
-                Assert.Equal("post by steve about cats", (await filterQuery.FirstOrDefaultAsync()).Title);
-                Assert.Equal(1, await filterQuery.CountAsync());
+                Assert.Equal("post by steve about cats", assert3);
+                Assert.Equal(1, assert4);
             }
         }
 
@@ -6433,7 +6488,7 @@ namespace YesSql.Tests
 
             using (var session = _store.CreateSession())
             {
-                // boolean : ((beach AND sand) OR (mountain AND lake)) NOT lizards 
+                // boolean : ((beach AND sand) OR (mountain AND lake)) NOT lizards
                 var filter = "title:((beach AND sand) OR (mountain AND lake)) NOT lizards";
                 var filterQuery = session.Query<Article>();
 
@@ -6589,7 +6644,7 @@ namespace YesSql.Tests
 
                 await parsed.ExecuteAsync(filterQuery);
 
-                // Order queries can be placed anywhere inside the booleans and they still get processed fine.  
+                // Order queries can be placed anywhere inside the booleans and they still get processed fine.
                 var yesSqlQuery = session.Query().For<Article>()
                     .All(
                         x => x.With<ArticleByPublishedDate>(x => x.Title.IsNotIn<ArticleByPublishedDate>(s => s.Title, w => w.Title.Contains("steve"))).OrderByDescending(x => x.Title)

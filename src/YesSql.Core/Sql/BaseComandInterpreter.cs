@@ -64,6 +64,7 @@ namespace YesSql.Sql
 
             builder.Append(_dialect.CreateTableString)
                 .Append(' ')
+                .Append(_dialect.SchemaNameQuotedPrefix())
                 .Append(_dialect.QuoteForTableName(command.Name))
                 .Append(" (");
 
@@ -82,7 +83,7 @@ namespace YesSql.Sql
             // We only create PK statements on columns that don't have IsIdentity since IsIdentity statements also contains the notion of primary key.
 
             var primaryKeys = command.TableCommands.OfType<CreateColumnCommand>().Where(ccc => ccc.IsPrimaryKey && !ccc.IsIdentity).Select(ccc => _dialect.QuoteForColumnName(ccc.ColumnName)).ToArray();
-            
+
             if (primaryKeys.Any())
             {
                 if (appendComma)
@@ -166,22 +167,24 @@ namespace YesSql.Sql
 
         public virtual void Run(StringBuilder builder, IAddColumnCommand command)
         {
-            builder.AppendFormat("alter table {0} add ", _dialect.QuoteForTableName(command.Name));
+            builder.AppendFormat("alter table {1}{0} add ", _dialect.QuoteForTableName(command.Name), _dialect.SchemaNameQuotedPrefix());
             Run(builder, (CreateColumnCommand)command);
         }
 
         public virtual void Run(StringBuilder builder, IDropColumnCommand command)
         {
-            builder.AppendFormat("alter table {0} drop column {1}",
+            builder.AppendFormat("alter table {3}{0} drop column {1}",
                 _dialect.QuoteForTableName(command.Name),
-                _dialect.QuoteForColumnName(command.ColumnName));
+                _dialect.QuoteForColumnName(command.ColumnName),
+                _dialect.SchemaNameQuotedPrefix());
         }
 
         public virtual void Run(StringBuilder builder, IAlterColumnCommand command)
         {
-            builder.AppendFormat("alter table {0} alter column {1} ",
+             builder.AppendFormat("alter table {3}{0} alter column {1} ",
                 _dialect.QuoteForTableName(command.Name),
-                _dialect.QuoteForColumnName(command.ColumnName));
+                _dialect.QuoteForColumnName(command.ColumnName),
+                _dialect.SchemaNameQuotedPrefix());
 
             var dbType = _dialect.ToDbType(command.DbType);
 
@@ -207,19 +210,21 @@ namespace YesSql.Sql
 
         public virtual void Run(StringBuilder builder, IRenameColumnCommand command)
         {
-            builder.AppendFormat("alter table {0} rename column {1} to {2}",
+            builder.AppendFormat("alter table {3}{0} rename column {1} to {2}",
                 _dialect.QuoteForTableName(command.Name),
                 _dialect.QuoteForColumnName(command.ColumnName),
-                _dialect.QuoteForColumnName(command.NewColumnName)
+                _dialect.QuoteForColumnName(command.NewColumnName),
+                _dialect.SchemaNameQuotedPrefix()
                 );
         }
 
         public virtual void Run(StringBuilder builder, IAddIndexCommand command)
         {
-            builder.AppendFormat("create index {1} on {0} ({2}) ",
+            builder.AppendFormat("create index {1} on {3}{0} ({2}) ",
                 _dialect.QuoteForTableName(command.Name),
                 _dialect.QuoteForColumnName(command.IndexName),
-                String.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(x)).ToArray()));
+                String.Join(", ", command.ColumnNames.Select(x => _dialect.QuoteForColumnName(x)).ToArray()),
+                _dialect.SchemaNameQuotedPrefix());
         }
 
         public virtual void Run(StringBuilder builder, IDropIndexCommand command)
@@ -242,6 +247,7 @@ namespace YesSql.Sql
             var builder = new StringBuilder();
 
             builder.Append("alter table ")
+                .Append(_dialect.SchemaNameQuotedPrefix())
                 .Append(_dialect.QuoteForTableName(command.SrcTable));
 
             builder.Append(_dialect.GetAddForeignKeyConstraintString(command.Name,
@@ -258,6 +264,7 @@ namespace YesSql.Sql
             var builder = new StringBuilder();
 
             builder.Append("alter table ")
+                .Append(_dialect.SchemaNameQuotedPrefix())
                 .Append(_dialect.QuoteForTableName(command.SrcTable))
                 .Append(_dialect.GetDropForeignKeyConstraintString(command.Name));
             yield return builder.ToString();

@@ -38,7 +38,7 @@ namespace YesSql
         /// Gets the cascade constraint sql statement.
         /// </summary>
         string CascadeConstraintsString { get; }
-        
+
         /// <summary>
         /// Gets the create table sql statement.
         /// </summary>
@@ -64,7 +64,7 @@ namespace YesSql
         /// Whether the underlying database support batching.
         /// </summary>
         bool SupportsBatching { get; }
-        
+
         /// <summary>
         /// Whether the dialect support unique queries.
         /// </summary>
@@ -74,6 +74,16 @@ namespace YesSql
         /// Returns whether the index names must be prefixed or not.
         /// </summary>
         bool PrefixIndex { get; }
+
+        /// <summary>
+        /// Return the default database schema name.
+        /// </summary>
+        string DefaultSchema { get; }
+
+        /// <summary>
+        /// Returns the database schema if applicable.
+        /// </summary>
+        string Schema { get; }
 
         /// <summary>
         /// Gets whether the identity columns requires the data type.
@@ -124,6 +134,16 @@ namespace YesSql
         /// Returns the quoted table name.
         /// </summary>
         string QuoteForTableName(string v);
+
+        /// <summary>
+        /// Returns the quoted alias name.
+        /// </summary>
+        string QuoteForAliasName(string alias);
+
+        /// <summary>
+        /// Returns the quoted schema name prefix if applicable.
+        /// </summary>
+        string SchemaNameQuotedPrefix();
 
         /// <summary>
         /// Gets the DROP TABLE SQL statement.
@@ -178,8 +198,8 @@ namespace YesSql
         /// <summary>
         /// Formats a index name to a deterministic value within the length constraints of the dialect.
         /// </summary>
-        string FormatIndexName(string name);        
-        
+        string FormatIndexName(string name);
+
         /// <summary>
         /// Returns the DISTINCT SELECT SQL statement.
         /// </summary>

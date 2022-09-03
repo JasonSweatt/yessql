@@ -87,6 +87,7 @@ namespace YesSql.Provider.MySql
         {
             AddTypeHandler<TimeSpan, long>(x => x.Ticks);
             Methods.Add("now", new TemplateFunction("UTC_TIMESTAMP()"));
+            Methods.Add("JSON_MODIFY", new TemplateFunction("json_set({0}, {1}, {2})"));
         }
 
         public override string Name => "MySql";
@@ -185,7 +186,7 @@ namespace YesSql.Provider.MySql
             }
 
             return name;
-        }        
+        }
 
         public override string GetDropForeignKeyConstraintString(string name)
         {
@@ -246,6 +247,11 @@ namespace YesSql.Provider.MySql
         public override string QuoteForTableName(string tableName)
         {
             return "`" + tableName + "`";
+        }
+
+        public override string QuoteForAliasName(string aliasName)
+        {
+            return aliasName;
         }
 
         public override void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)

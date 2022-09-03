@@ -31,7 +31,7 @@ namespace YesSql.Provider.Sqlite
             { DbType.DateTime, "DATETIME" },
             { DbType.DateTime2, "DATETIME" },
             { DbType.DateTimeOffset, "TEXT" },
-            { DbType.Time, "TIME" }, 
+            { DbType.Time, "TIME" },
             { DbType.Boolean, "BOOL" },
             { DbType.Guid, "UNIQUEIDENTIFIER" }
         };
@@ -91,6 +91,8 @@ namespace YesSql.Provider.Sqlite
             Methods.Add("month", new TemplateFunction("cast(strftime('%m', {0}) as int)"));
             Methods.Add("year", new TemplateFunction("cast(strftime('%Y', {0}) as int)"));
             Methods.Add("now", new TemplateFunction("DATETIME('now')"));
+            Methods.Add("JSON_VALUE", new TemplateFunction("json_extract({0}, {1})"));
+            Methods.Add("JSON_MODIFY", new TemplateFunction("json_set({0}, {1}, {2})"));
         }
 
         public override string Name => "Sqlite";
@@ -152,6 +154,11 @@ namespace YesSql.Provider.Sqlite
         public override string QuoteForTableName(string tableName)
         {
             return "[" + tableName + "]";
+        }
+
+        public override string QuoteForAliasName(string aliasName)
+        {
+            return aliasName;
         }
 
         public override bool SupportsIfExistsBeforeTableName => true;

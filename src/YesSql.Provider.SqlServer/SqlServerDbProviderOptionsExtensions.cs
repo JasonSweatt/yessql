@@ -8,15 +8,17 @@ namespace YesSql.Provider.SqlServer
     {
         public static IConfiguration UseSqlServer(
             this IConfiguration configuration,
-            string connectionString)
+            string connectionString,
+            string schema = null)
         {
-            return UseSqlServer(configuration, connectionString, IsolationLevel.ReadUncommitted);
+            return UseSqlServer(configuration, connectionString, IsolationLevel.ReadUncommitted, schema);
         }
 
         public static IConfiguration UseSqlServer(
             this IConfiguration configuration,
             string connectionString,
-            IsolationLevel isolationLevel)
+            IsolationLevel isolationLevel,
+            string schema = null)
         {
             if (configuration == null)
             {
@@ -28,7 +30,7 @@ namespace YesSql.Provider.SqlServer
                 throw new ArgumentException(nameof(connectionString));
             }
 
-            configuration.SqlDialect = new SqlServerDialect();
+            configuration.SqlDialect = new SqlServerDialect(schema);
             configuration.CommandInterpreter = new SqlServerCommandInterpreter(configuration.SqlDialect);
             configuration.ConnectionFactory = new DbConnectionFactory<SqlConnection>(connectionString);
             configuration.IsolationLevel = isolationLevel;

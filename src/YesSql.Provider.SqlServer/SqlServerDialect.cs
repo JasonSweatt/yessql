@@ -84,8 +84,13 @@ namespace YesSql.Provider.SqlServer
             };
         }
 
-        public SqlServerDialect()
+        public SqlServerDialect(string schema = null)
         {
+            if (!String.IsNullOrWhiteSpace(schema))
+            {
+                Schema = schema;
+            }
+
             AddTypeHandler<TimeSpan, long>(x => x.Ticks);
 
             Methods.Add("second", new TemplateFunction("datepart(second, {0})"));
@@ -93,7 +98,7 @@ namespace YesSql.Provider.SqlServer
             Methods.Add("hour", new TemplateFunction("datepart(hour, {0})"));
             Methods.Add("now", new TemplateFunction("getUtcDate()"));
 
-            // These are not necessary since SQL Server 2008 
+            // These are not necessary since SQL Server 2008
             //Methods.Add("day", new TemplateFunction("datepart(day, {0})"));
             //Methods.Add("month", new TemplateFunction("datepart(month, {0})"));
             //Methods.Add("year", new TemplateFunction("datepart(year, {0})"));
@@ -108,7 +113,8 @@ namespace YesSql.Provider.SqlServer
         public override byte DefaultDecimalPrecision => 19;
 
         public override byte DefaultDecimalScale => 5;
-
+        public override string Schema { get; }
+        public override string DefaultSchema => "dbo";
         public override string GetTypeName(DbType dbType, int? length, byte? precision, byte? scale)
         {
             if (length.HasValue)
@@ -209,6 +215,17 @@ namespace YesSql.Provider.SqlServer
         public override string QuoteForTableName(string tableName)
         {
             return "[" + tableName + "]";
+        }
+
+        public override string QuoteForAliasName(string aliasName)
+        {
+            return aliasName;
+        }
+
+        public override string SchemaNameQuotedPrefix()
+        {
+            var schema = Schema ?? DefaultSchema;
+            return "[" + schema + "].";
         }
 
         public override void Concat(IStringBuilder builder, params Action<IStringBuilder>[] generators)

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using YesSql.Indexes;
 using YesSql.Samples.Web.Models;
 
@@ -16,6 +17,11 @@ namespace YesSql.Samples.Web.Indexes
 
     }
 
+    public class BlogPostByTag : MapIndex
+    {
+        public string Tag { get; set; }
+    }
+
     public class BlogPostIndexProvider : IndexProvider<BlogPost>
     {
         public override void Describe(DescribeContext<BlogPost> context)
@@ -30,6 +36,11 @@ namespace YesSql.Samples.Web.Indexes
                     PublishedUtc = blogPost.PublishedUtc,
                     Published = blogPost.Published
                 });
+
+            // for each BlogPost, create BlogPostByTag index
+            context
+                .For<BlogPostByTag>()
+                .Map(blogPost => blogPost.Tags.Select(tag => new BlogPostByTag { Tag = tag }));
         }
     }
 }
