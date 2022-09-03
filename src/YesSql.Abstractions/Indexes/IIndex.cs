@@ -4,7 +4,7 @@ namespace YesSql.Indexes
 {
     public interface IIndex
     {
-        int Id { get; set; }
+        long Id { get; set; }
         void AddDocument(Document document);
         void RemoveDocument(Document document);
         IEnumerable<Document> GetAddedDocuments();

@@ -27,7 +27,7 @@ namespace YesSql
 
         internal Dictionary<string, IEnumerable<IndexDescriptor>> Descriptors = new();
 
-        internal Dictionary<Type, IAccessor<int>> IdAccessors = new();
+        internal Dictionary<Type, IAccessor<long>> IdAccessors = new();
 
         internal Dictionary<Type, IAccessor<int>> VersionAccessors = new();
 
@@ -202,13 +202,17 @@ namespace YesSql
                             // The table doesn't exist, create it
                             builder
                                 .CreateTable(documentTable, table => table
-                                .Column<int>(nameof(Document.Id), column => column.PrimaryKey().NotNull())
+                                .Column<long>(nameof(Document.Id), column => column.PrimaryKey().NotNull())
                                 .Column<string>(nameof(Document.Type), column => column.NotNull())
                                 .Column<string>(nameof(Document.Content), column => column.Unlimited())
                                 .Column<long>(nameof(Document.Version), column => column.NotNull().WithDefault(0))
+                                .Column<DateTime>(nameof(Document.LastUpdatedOn), column => column.NotNull())
                             )
                             .AlterTable(documentTable, table => table
                                 .CreateIndex("IX_" + documentTable + "_Type", "Type")
+                            )
+                            .AlterTable(documentTable, table => table
+                                .CreateIndex("IX_" + documentTable + "_LastUpdatedOn", "LastUpdatedOn")
                             );
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
@@ -247,7 +251,7 @@ namespace YesSql
         {
         }
 
-        public IAccessor<int> GetIdAccessor(Type tContainer)
+        public IAccessor<long> GetIdAccessor(Type tContainer)
         {
             if (!IdAccessors.TryGetValue(tContainer, out var result))
             {
@@ -255,7 +259,7 @@ namespace YesSql
                 {
                     if (!IdAccessors.TryGetValue(tContainer, out result))
                     {
-                        result = Configuration.IdentifierAccessorFactory.CreateAccessor<int>(tContainer);
+                        result = Configuration.IdentifierAccessorFactory.CreateAccessor<long>(tContainer);
 
                         IdAccessors[tContainer] = result;
                     }
@@ -349,9 +353,9 @@ namespace YesSql
             return Expression.Lambda<Func<IDescriptor>>(Expression.New(contextType)).Compile();
         }
 
-        public int GetNextId(string collection)
+        public long GetNextId(string collection)
         {
-            return (int)Configuration.IdGenerator.GetNextId(collection);
+            return Configuration.IdGenerator.GetNextId(collection);
         }
 
         public IStore RegisterIndexes(IEnumerable<IIndexProvider> indexProviders, string collection = null)

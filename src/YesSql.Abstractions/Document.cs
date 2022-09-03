@@ -1,3 +1,5 @@
+using System;
+
 namespace YesSql
 {
     /// <summary>
@@ -8,7 +10,7 @@ namespace YesSql
         /// <summary>
         /// The unique identifier of the document in the database.
         /// </summary>
-        public int Id { get; set; }
+        public long Id { get; set; }
 
         /// <summary>
         /// The type of the document.
@@ -27,5 +29,10 @@ namespace YesSql
         /// This property is used to track updates, and optionally detect concurrency violations.
         /// </remarks>
         public long Version { get; set; }
+
+        /// <summary>
+        /// Last updated datetime
+        /// </summary>
+        public DateTime LastUpdatedOn { get; set; } = DateTime.UtcNow;
     }
 }

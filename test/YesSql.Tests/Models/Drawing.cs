@@ -14,7 +14,7 @@ namespace YesSql.Tests.Models
 
     public abstract class Shape
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
     }
 
     public class Square : Shape

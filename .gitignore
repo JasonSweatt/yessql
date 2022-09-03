@@ -23,6 +23,7 @@ project.lock.json
 *.mdb
 .vs/
 .build/
-.testPublish/ 
+.testPublish/
 .idea
 yessql.db
+.vscode
