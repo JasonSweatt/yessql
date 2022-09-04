@@ -72,10 +72,10 @@ namespace YesSql.Commands
 
             Document.LastUpdatedOn = DateTime.UtcNow;
             batchCommand
-                .AddParameter("Id_" + index, Document.Id, DbType.Int64)
-                .AddParameter("Content_" + index, Document.Content, DbType.String)
-                .AddParameter("Version_" + index, Document.Version, DbType.Int64)
-                .AddParameter("LastUpdatedOn_" + index, Document.LastUpdatedOn, DbType.DateTime);
+                .AddParameter($"Id_{index}", Document.Id, DbType.Int64)
+                .AddParameter($"Content_{index}", Document.Content, DbType.String)
+                .AddParameter($"Version_{index}", Document.Version, DbType.Int64)
+                .AddParameter($"LastUpdatedOn_{index}", Document.LastUpdatedOn, DbType.DateTime);
 
             return true;
         }

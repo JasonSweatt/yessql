@@ -43,11 +43,11 @@ namespace YesSql.Commands
             queries.Add(insertCmd);
 
             batchCommand
-                .AddParameter("Id_" + index, Document.Id)
-                .AddParameter("Type_" + index, Document.Type)
-                .AddParameter("Content_" + index, Document.Content)
-                .AddParameter("Version_" + index, Document.Version)
-                .AddParameter("LasteUpdatedOn_" + index, DateTime.UtcNow, DbType.DateTime);
+                .AddParameter($"Id_{index}", Document.Id)
+                .AddParameter($"Type_{index}", Document.Type)
+                .AddParameter($"Content_{index}", Document.Content)
+                .AddParameter($"Version_{index}", Document.Version)
+                .AddParameter($"LastUpdatedOn_{index}", DateTime.UtcNow, DbType.DateTime);
 
             return true;
         }

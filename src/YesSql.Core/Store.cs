@@ -47,7 +47,7 @@ namespace YesSql
 
             // Databases that don't support DateTimeOffset natively will store these in string columns.
             SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());
-            
+
             // Required by Sqlite. Guids are stored as text (uniqueidentifier) and are converted back to Guid with this handler.
             SqlMapper.AddTypeHandler(new GuidHandler());
 
@@ -101,7 +101,7 @@ namespace YesSql
                 await connection.OpenAsync();
 
                 using (var transaction = connection.BeginTransaction(Configuration.IsolationLevel))
-#endif            
+#endif
                 {
                     var builder = new SchemaBuilder(Configuration, transaction);
                     await Configuration.IdGenerator.InitializeAsync(this, builder);
@@ -126,7 +126,7 @@ namespace YesSql
             await using (var connection = Configuration.ConnectionFactory.CreateConnection())
 #else
             using (var connection = Configuration.ConnectionFactory.CreateConnection())
-#endif            
+#endif
             {
                 await connection.OpenAsync();
 
@@ -209,10 +209,10 @@ namespace YesSql
                                 .Column<DateTime>(nameof(Document.LastUpdatedOn), column => column.NotNull())
                             )
                             .AlterTable(documentTable, table => table
-                                .CreateIndex("IX_" + documentTable + "_Type", "Type")
+                                .CreateIndex($"IX_{documentTable}_Type", "Type")
                             )
                             .AlterTable(documentTable, table => table
-                                .CreateIndex("IX_" + documentTable + "_LastUpdatedOn", "LastUpdatedOn")
+                                .CreateIndex($"IX_{documentTable}_LastUpdatedOn", "LastUpdatedOn")
                             );
 
 #if SUPPORTS_ASYNC_TRANSACTIONS
