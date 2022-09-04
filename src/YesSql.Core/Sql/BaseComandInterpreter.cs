@@ -10,7 +10,7 @@ namespace YesSql.Sql
     public abstract class BaseCommandInterpreter : ICommandInterpreter
     {
         protected readonly ISqlDialect _dialect;
-        private const char Space = ' ';
+        protected const char Space = ' ';
 
         public BaseCommandInterpreter(ISqlDialect dialect)
         {

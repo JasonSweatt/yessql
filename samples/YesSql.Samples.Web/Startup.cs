@@ -1,10 +1,10 @@
 using System;
-using System.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using YesSql.Filters.Query;
-using YesSql.Provider.Sqlite;
+using YesSql.Provider.SqlServer;
 using YesSql.Samples.Web.Indexes;
 using YesSql.Samples.Web.Models;
 using YesSql.Samples.Web.ViewModels;
@@ -15,17 +15,25 @@ namespace YesSql.Samples.Web
 {
     public class Startup
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Startup" /> class.
+        /// </summary>
+        /// <param name="configuration">The configuration.</param>
+        public Startup(Microsoft.Extensions.Configuration.IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
+
+        /// <summary>
+        /// Gets the configuration.
+        /// </summary>
+        /// <value>The configuration.</value>
+        public Microsoft.Extensions.Configuration.IConfiguration Configuration { get; }
+
         public void ConfigureServices(IServiceCollection services)
         {
-            var filename = "yessql.db";
-
-            if (File.Exists(filename))
-            {
-                File.Delete(filename);
-            }
-
             services.AddDbProvider(config =>
-                config.UseSqLite($"Data Source={filename};Cache=Shared"));
+                config.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
 
             services.AddMvc(options => options.EnableEndpointRouting = false);
 
@@ -169,7 +177,8 @@ namespace YesSql.Samples.Web
             });
 
             var store = app.ApplicationServices.GetRequiredService<IStore>();
-            store.RegisterIndexes(new[] { new BlogPostIndexProvider() });
+            store
+                .RegisterIndexes(new[] { new BlogPostIndexProvider() });
 
             using (var connection = store.Configuration.ConnectionFactory.CreateConnection())
             {

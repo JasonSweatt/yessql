@@ -102,6 +102,8 @@ namespace YesSql.Provider
 
         public virtual string CreateTableString => "create table";
 
+        public virtual string CreateTableIdempotentString => "IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'{0}') AND type in (N'U'))";
+
         public virtual bool HasDataTypeInIdentityColumn => false;
 
         public abstract string IdentitySelectString { get; }

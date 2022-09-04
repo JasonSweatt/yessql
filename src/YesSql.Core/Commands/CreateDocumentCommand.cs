@@ -38,7 +38,7 @@ namespace YesSql.Commands
         public override bool AddToBatch(ISqlDialect dialect, List<string> queries, DbCommand batchCommand, List<Action<DbDataReader>> actions, int index)
         {
             var documentTable = _tableNameConvention.GetDocumentTable(Collection);
-            var insertCmd = $"insert into {dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(_tablePrefix + documentTable)} ({dialect.QuoteForColumnName("Id")}, {dialect.QuoteForColumnName("Type")}, {dialect.QuoteForColumnName("Content")}, {dialect.QuoteForColumnName("Version")}, {dialect.QuoteForColumnName("UpdatedTime")}) values (@Id_{index}, @Type_{index}, @Content_{index}, @Version_{index}, @UpdatedTime_{index});";
+            var insertCmd = $"insert into {dialect.SchemaNameQuotedPrefix() + dialect.QuoteForTableName(_tablePrefix + documentTable)} ({dialect.QuoteForColumnName("Id")}, {dialect.QuoteForColumnName("Type")}, {dialect.QuoteForColumnName("Content")}, {dialect.QuoteForColumnName("Version")}, {dialect.QuoteForColumnName("LastUpdatedOn")}) values (@Id_{index}, @Type_{index}, @Content_{index}, @Version_{index}, @LastUpdatedOn_{index});";
 
             queries.Add(insertCmd);
 

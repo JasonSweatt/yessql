@@ -40,6 +40,12 @@ namespace YesSql
         string CascadeConstraintsString { get; }
 
         /// <summary>
+        /// Gets the Idempotent create table sql statement.
+        /// </summary>
+        /// <value></value>
+        string CreateTableIdempotentString { get; }
+
+        /// <summary>
         /// Gets the create table sql statement.
         /// </summary>
         /// <value></value>
